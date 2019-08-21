@@ -1,0 +1,17 @@
+// vim: set tabstop=2 softtabstop=2 shiftwidth=2 noexpandtab colorcolumn=81 :
+[
+	/*{
+		// 28 nodes, 32 CPUs per node, not preemptable
+		"partition": "ucgd-rw",
+		"max_jobs": 42,
+		"commands_per_job": 32,
+		"account": "ucgd-rw"
+	},*/
+	{
+		// 90 nodes, 32 CPUs per node, preemptable
+		"partition": "redwood-guest",
+		"max_jobs": 135,
+		"commands_per_job": 16,
+		"account": "owner-guest"
+	}
+]

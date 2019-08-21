@@ -1,0 +1,10 @@
+// vim: set tabstop=2 softtabstop=2 shiftwidth=2 noexpandtab colorcolumn=81 :
+[
+	{
+		// 385 nodes, 32 CPUs per node, max 1,000 queued jobs, preemptable
+		"partition": "kingspeak-guest",
+		"max_jobs": 500,
+		"commands_per_job": 16,
+		"account": "owner-guest"
+	}
+]
