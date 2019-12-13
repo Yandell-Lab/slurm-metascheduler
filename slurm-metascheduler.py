@@ -7,7 +7,7 @@ import re
 import subprocess
 from argparse import ArgumentParser, FileType
 from datetime import datetime, timedelta
-from math import ceil, floor
+from math import ceil, floor, inf
 from os.path import isdir
 from signal import signal, SIGINT
 from subprocess import CalledProcessError
@@ -100,7 +100,7 @@ total_commands = len(commands_to_submit)
 total_finished_commands = 0
 total_unfinished_commands = len(commands_to_submit)
 
-min_command_time = float('inf')
+min_command_time = inf
 max_command_time = 0
 total_command_time = 0
 
@@ -192,7 +192,7 @@ def sorted_queues():
 	return sorted(queues, key=lambda queue: queue['score'], reverse=True)
 
 def format_benchmark(seconds):
-	seconds = round(seconds)
+	seconds = 0 if seconds == inf else round(seconds)
 	days, seconds = divmod(seconds, 24 * 60 * 60)
 	hours, seconds = divmod(seconds, 60 * 60)
 	minutes, seconds = divmod(seconds, 60)
@@ -415,7 +415,10 @@ if args.monitor != None:
 		'[' + strftime('%c') + '] Slurm metascheduler finished ' +
 		str(total_finished_commands) + ' commands successfully'
 	)
-	mean_command_time = total_command_time / total_finished_commands
+	if total_finished_commands:
+		mean_command_time = total_command_time / total_finished_commands
+	else:
+		mean_command_time = 0
 	print(
 		'[' + strftime('%c') + '] Command running times:' +
 		' Min: ' + format_benchmark(min_command_time) +
