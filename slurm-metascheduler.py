@@ -8,6 +8,7 @@ import subprocess
 from argparse import ArgumentParser, FileType
 from datetime import datetime, timedelta
 from math import ceil, floor, inf
+from os import makedirs
 from os.path import isdir
 from signal import signal, SIGINT
 from subprocess import CalledProcessError
@@ -58,12 +59,21 @@ parser.add_argument(
 	help='Directory to save each job\'s stdout and stderr in',
 	default='.'
 )
+parser.add_argument(
+	'--create-out',
+	action='store_true',
+	help='Create the out directory if it does not already exist',
+	default=False
+)
 args = parser.parse_args()
 if args.monitor == -1:
 	args.monitor = None
 else:
 	args.monitor = timedelta(seconds=args.monitor)
-assert(isdir(args.out))
+if args.create_out:
+	makedirs(args.out, exist_ok=True)
+else:
+	assert(isdir(args.out))
 args.out += '/slurm-%j.out'
 
 queues = json5.load(args.config_file)
