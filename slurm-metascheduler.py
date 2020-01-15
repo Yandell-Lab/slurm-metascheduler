@@ -7,8 +7,9 @@ import re
 import subprocess
 from argparse import ArgumentParser, FileType
 from datetime import datetime, timedelta
+from glob import glob
 from math import ceil, floor, inf
-from os import makedirs
+from os import makedirs, remove
 from os.path import isdir
 from signal import signal, SIGINT
 from subprocess import CalledProcessError
@@ -65,6 +66,12 @@ parser.add_argument(
 	help='Create the out directory if it does not already exist',
 	default=False
 )
+parser.add_argument(
+	'--clear-out',
+	action='store_true',
+	help='Remove old files from the out directory',
+	default=False
+)
 args = parser.parse_args()
 if args.monitor == -1:
 	args.monitor = None
@@ -74,6 +81,9 @@ if args.create_out:
 	makedirs(args.out, exist_ok=True)
 else:
 	assert(isdir(args.out))
+if args.clear_out:
+	for f in glob(args.out + '/slurm-*.out'):
+		remove(f)
 args.out += '/slurm-%j.out'
 
 queues = json5.load(args.config_file)
