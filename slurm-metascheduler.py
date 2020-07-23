@@ -37,7 +37,7 @@ parser.add_argument(
 	default=3600
 )
 parser.add_argument(
-	'--retry',
+	'--retries',
 	type=int,
 	help='Number of times to retry each command before giving up',
 	default=0
@@ -366,7 +366,7 @@ while total_unfinished_commands:
 			for j in range(len(job.commands)):
 				command = job.commands[j]
 				job.commands[j].tries[job.queue['partition']] += 1
-				if command.total_retries() >= args.retry:
+				if command.total_retries() >= args.retries:
 					print(
 						'[' + strftime('%c') + '] ERROR: ' +
 						'The following command has failed ' +
