@@ -51,7 +51,7 @@ parser.add_argument(
 parser.add_argument(
 	'--timeout',
 	type=int,
-	help='Number of minutes needed for the slowest command to finish',
+	help='Number of seconds needed for the slowest command to finish, including time spent waiting in the scheduling queue',
 	default=0
 )
 parser.add_argument(
@@ -258,7 +258,7 @@ while total_unfinished_commands:
 				mem = ceil(args.memory * len(job_commands) * 1e6)
 				sbatch += ' --mem ' + str(mem) + 'K'
 			if args.timeout:
-				sbatch += ' -t ' + str(args.timeout)
+				sbatch += ' -t 0:' + str(args.timeout)
 			if 'qos' in queue:
 				sbatch += ' --qos ' + queue['qos']
 			sbatch += ' -o ' + args.out + ' -e ' + args.out
