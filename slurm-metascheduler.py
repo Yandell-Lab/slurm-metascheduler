@@ -123,6 +123,9 @@ total_unfinished_commands = len(commands_to_submit)
 min_command_time = inf
 max_command_time = 0
 total_command_time = 0
+min_command_memory = inf
+max_command_memory = 0
+total_command_memory = 0
 
 submitted_jobs = []
 
@@ -211,7 +214,7 @@ def sorted_queues():
 	#return the queues in order of performance score
 	return sorted(queues, key=lambda queue: queue['score'], reverse=True)
 
-def format_benchmark(seconds):
+def format_time(seconds):
 	seconds = 0 if seconds == inf else round(seconds)
 	days, seconds = divmod(seconds, 24 * 60 * 60)
 	hours, seconds = divmod(seconds, 60 * 60)
@@ -225,6 +228,18 @@ def format_benchmark(seconds):
 		ret += str(minutes) + 'm'
 	ret += str(seconds) + 's'
 	return ret
+
+def format_size(count):
+	count = 0 if count == inf else round(count)
+	if count >= 2**40:
+		return '{:,.2f} TiB'.format(count / 2**40)
+	if count >= 2**30:
+		return '{:,.2f} GiB'.format(count / 2**30)
+	if count >= 2**20:
+		return '{:,.2f} MiB'.format(count / 2**20)
+	if count >= 2**10:
+		return '{:,.2f} KiB'.format(count / 2**10)
+	return '{:,} B'.format(count)
 
 if args.monitor != None:
 	print(
@@ -392,10 +407,15 @@ while total_unfinished_commands:
 			job.queue['current_job_load'] -= 1
 			commands_to_submit += job.commands
 		elif job_state == 'COMPLETED':
-			#factor the job's running time into the statistics
+			#factor the job's running time and memory usage into the statistics
 			try:
 				job_info = subprocess.check_output([
-					'sacct', '-j', job.number, '--noheader', '-o', 'CPUTimeRAW%20'
+					'sacct',
+					'-j', job.number,
+					'--noheader',
+					'--noconvert',
+					'--parsable',
+					'-o', 'CPUTimeRAW,MaxVMSize'
 				])
 			except CalledProcessError as e:
 				print(
@@ -404,7 +424,10 @@ while total_unfinished_commands:
 				)
 				i += 1
 				continue
-			job_time = int(re.search(r'\w+', job_info.decode()).group(0))
+			job_info = job_info.decode()
+			job_info = [row.split('|') for row in job_info.split('\n') if row]
+			job_time = max(int(row[0]) for row in job_info if row[0])
+			job_memory = max(int(row[1]) for row in job_info if row[1])
 			# Slurm multiplies the job's running time by the node's number of cores
 			# (even if some cores sat idle), so compensate for that as well as we
 			# can to get an estimate of the time each individual command took.
@@ -414,6 +437,14 @@ while total_unfinished_commands:
 			if command_time < min_command_time:
 				min_command_time = command_time
 			total_command_time += command_time * len(job.commands)
+			# The reported memory usage is for all processes added together, so we
+			# don't have to worry about idle cores (which use zero memory).
+			command_memory = (job_memory + len(job.commands) - 1) // len(job.commands)
+			if command_memory > max_command_memory:
+				max_command_memory = command_memory
+			if command_memory < min_command_memory:
+				min_command_memory = command_memory
+			total_command_memory += job_memory
 			#count the job as a success
 			del submitted_jobs[i]
 			job.queue['current_job_load'] -= 1
@@ -437,19 +468,28 @@ if args.monitor != None:
 	)
 	if total_finished_commands:
 		mean_command_time = total_command_time / total_finished_commands
+		mean_command_memory = total_command_memory / total_finished_commands
 	else:
 		mean_command_time = 0
+		mean_command_memory = 0
 	print(
 		'[' + strftime('%c') + '] Command running times:' +
-		' Min: ' + format_benchmark(min_command_time) +
-		' Max: ' + format_benchmark(max_command_time) +
-		' Mean: ' + format_benchmark(mean_command_time) +
-		' Total: ' + format_benchmark(total_command_time)
+		' Min: ' + format_time(min_command_time) +
+		' Max: ' + format_time(max_command_time) +
+		' Mean: ' + format_time(mean_command_time) +
+		' Total: ' + format_time(total_command_time)
+	)
+	print(
+		'[' + strftime('%c') + '] Command memory usage:' +
+		' Min: ' + format_size(min_command_memory) +
+		' Max: ' + format_size(max_command_memory) +
+		' Mean: ' + format_size(mean_command_memory) +
+		' Total: ' + format_size(total_command_memory)
 	)
 	wall_clock_time = datetime.now() - start_time
 	print(
 		'[' + strftime('%c') + '] Wall-clock time: ' +
-		format_benchmark(
+		format_time(
 			wall_clock_time.days * 24 * 60 * 60 +
 			wall_clock_time.seconds
 		)
