@@ -426,8 +426,8 @@ while total_unfinished_commands:
 				continue
 			job_info = job_info.decode()
 			job_info = [row.split('|') for row in job_info.split('\n') if row]
-			job_time = max(int(row[0]) for row in job_info if row[0])
-			job_memory = max(int(row[1]) for row in job_info if row[1])
+			job_time = max([0] + [int(row[0]) for row in job_info if row[0]])
+			job_memory = max([0] + [int(row[1]) for row in job_info if row[1]])
 			# Slurm multiplies the job's running time by the node's number of cores
 			# (even if some cores sat idle), so compensate for that as well as we
 			# can to get an estimate of the time each individual command took.
