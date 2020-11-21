@@ -179,6 +179,39 @@ def sorted_queues():
 			del queue['command_completion_times'][0]
 		queue['score'] = 1 + len(queue['command_completion_times'])
 		score_denominator += queue['score']
+	#if there is no recent empirical data on any of the queues, instead score them
+	#based on how long the line for each queue currently is
+	if score_denominator == len(queues):
+		our_job_numbers = set(job.number for job in submitted_jobs)
+		try:
+			for queue in queues:
+				pending_job_numbers = subprocess.check_output([
+					'squeue',
+					'-p', queue['partition'],
+					'--state', 'PENDING',
+					'--noheader',
+					'-o', '%A'
+				]).decode().split('\n')
+				#if we have a job in line, only consider jobs that are ahead of that one
+				if our_job_numbers:
+					pending_job_numbers = [
+						int(job_number)
+						for job_number in pending_job_numbers if job_number
+					]
+					for i in reversed(range(len(pending_job_numbers))):
+						if pending_job_numbers[i] in our_job_numbers:
+							del pending_job_numbers[:i+1]
+							break
+				queue['score'] = queue['max_jobs'] / (len(pending_job_numbers) + 1)
+				score_denominator += queue['score']
+		except CalledProcessError as e:
+			print(
+				'[' + strftime('%c') + '] WARNING: ' +
+				'squeue failed to determine the number of pending jobs in partition ' + queue['partition']
+			)
+			for queue in queues:
+				queue['score'] = 1
+			score_denominator = len(queues)
 	#determine each queue's ideal load
 	for queue in queues:
 		score_fraction = queue['score'] / score_denominator
