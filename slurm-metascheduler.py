@@ -43,6 +43,12 @@ parser.add_argument(
 	default=0
 )
 parser.add_argument(
+	'-j',
+	type=int,
+	help='Maximum number of commands to run simultaneously',
+	default=0
+)
+parser.add_argument(
 	'--memory',
 	type=float,
 	help='Minimum memory required by the most greedy command, in gigabytes',
@@ -289,6 +295,9 @@ while total_unfinished_commands:
 		commands_for_queue = []
 		n_commands = queue['ideal_job_load'] - queue['current_job_load']
 		n_commands *= queue['commands_per_job']
+		if args.j > 0:
+			n_submitted_commands = sum(len(job.commands) for job in submitted_jobs)
+			n_commands = min(n_commands, args.j - n_submitted_commands)
 		i = 0
 		while i < len(commands_to_submit) and len(commands_for_queue) < n_commands:
 			command = commands_to_submit[i]
