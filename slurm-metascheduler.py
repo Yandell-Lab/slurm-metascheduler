@@ -321,7 +321,7 @@ while total_unfinished_commands:
 			sbatch += ' -o ' + args.out + ' -e ' + args.out
 			sbatch += ' -n 1 --no-requeue << EOF1\n'
 			sbatch += '#!/bin/bash\n'
-			sbatch += 'parallel << EOF2\n'
+			sbatch += 'parallel --halt now,fail=1 << EOF2\n'
 			for command in job_commands:
 				sbatch += command.line + '\n'
 			sbatch += 'EOF2\n'
