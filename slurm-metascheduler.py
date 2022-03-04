@@ -48,9 +48,10 @@ parser.add_argument(
 	help='Maximum number of commands to run simultaneously',
 	default=0
 )
+gb = lambda s: float(s.strip().partition('G')[0])
 parser.add_argument(
 	'--memory',
-	type=float,
+	type=gb,
 	help='Minimum memory required by the most greedy command, in gigabytes',
 	default=None
 )
